@@ -75,6 +75,7 @@ public class Hand_Controller : MonoBehaviour
                 UpdateNearestInteractable(GetNearestInteractable());
             }
         }
+        
     }
 
     private void OnTriggerExit(Collider other)

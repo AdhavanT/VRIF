@@ -9,7 +9,7 @@ public class SnapArea : MonoBehaviour
 {
     public SnapHost Host;
     public delegate void SnapAreaEvent();
-    public SnapAreaEvent OnSnapped;
+    public SnapAreaEvent OnSnapped, OnPermanentSnap;
     public bool IsSnapped;
     public bool PermanentSnap;
     
@@ -31,28 +31,53 @@ public class SnapArea : MonoBehaviour
     #region Adding Event callbacks on OnEnable and removing them on OnDisable
     private void OnEnable()
     {
-        #region Setting OnSnapped Callbacks
-        OnSnapped += SetIsSetTrue;
-        OnSnapped += DisableSnap;
-        if(Host != null)
-        {
-            OnSnapped += Host.CheckCompletion;
-        }
+        #region Setting Events Callbacks
+        AddOnSnappedCallbacks();
+        AddOnPermanentSnapCallbacks();
         #endregion
     }
+
+        #region Setting/Removing the Event's Callbacks
+        private void AddOnPermanentSnapCallbacks()
+        {
+            OnSnapped += SetIsSetTrue;
+            if (Host != null)
+            {
+                OnSnapped += Host.CheckCompletion;
+            }
+        }
+
+        private void AddOnSnappedCallbacks()
+        {
+            OnSnapped += SetIsSetTrue;
+            OnSnapped += DisableSnap;
+            if (Host != null)
+            {
+                OnSnapped += Host.CheckCompletion;
+            }
+        }
+
+        private void RemoveAllCallbacks(ref SnapAreaEvent EmptysnapAreaEvent)
+        {
+            EmptysnapAreaEvent = null;
+        }
+        #endregion
+
+    private void DestroySnap()
+    {
+        
+    }
+
     private void OnDisable()
     {
-        #region Removing OnSnapped Callbacks
-        if(Host != null)
-        {
-            OnSnapped -= Host.CheckCompletion;
-        }
-        OnSnapped -= SetIsSetTrue;
+        #region Removing Callbacks
+        RemoveAllCallbacks(ref OnSnapped);
+        RemoveAllCallbacks(ref OnPermanentSnap);
         #endregion
     }
     #endregion
 
-    #region triggering OnSnappedEvent
+    #region triggering OnSnappedEvent or the OnSnappedPermanentEvent
     public void TriggerOnSnappedEvent()
     {
         StartCoroutine("CorTriggerOnSnappedEvent");
@@ -60,7 +85,16 @@ public class SnapArea : MonoBehaviour
 
     IEnumerator CorTriggerOnSnappedEvent()
     {
-        OnSnapped.Invoke();
+        if(PermanentSnap)
+        {
+            OnPermanentSnap.Invoke();
+            RemoveAllCallbacks(ref OnSnapped);
+            RemoveAllCallbacks(ref OnPermanentSnap);
+        }
+        else
+        {
+            OnSnapped.Invoke();
+        }
         yield return null;
     }
     #endregion
