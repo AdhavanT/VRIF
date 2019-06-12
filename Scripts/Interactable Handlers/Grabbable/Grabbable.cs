@@ -13,18 +13,23 @@ using Valve.VR;
 public class Grabbable : MonoBehaviour
 {
     private Interactable interactable;
-
     public UnityEvent OnPickUp;
     public UnityEvent OnRelease;
     public bool isGrabbable = true;
     public bool enableToggleGrab = false;
     private bool isGrabbed = false;
     private Rigidbody rb;
+    [Tooltip("This sets whether to snap the object direcly to hands pos or directly link it")]
+    public bool SnapPosToHand = false;
    
     public SteamVR_Action_Boolean OnGrabGrip;
 
     private void Awake()
     {
+        if(gameObject.GetComponent<Joint>() != null)
+        {
+            Debug.Log("This component has a Fixed joint and wont be properly grabbable");
+        }
         if(OnGrabGrip == null)
         {
             OnGrabGrip = SteamVR_Actions.default_GrabGrip;
@@ -117,7 +122,10 @@ public class Grabbable : MonoBehaviour
     {
         interactable.OnStartInteraction.Invoke();
         isGrabbed = true;
-        transform.position = interactable.ActiveHand.transform.position;
+        if(SnapPosToHand)
+        {
+            transform.position = interactable.ActiveHand.transform.position;
+        }
         interactable.ActiveHand.m_joint.connectedBody = rb;
         interactable.OnUnequip += Drop;
     }

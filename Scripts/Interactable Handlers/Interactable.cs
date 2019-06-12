@@ -38,7 +38,6 @@ public class Interactable : MonoBehaviour
 
     public void RemoveCurrentInteractive()
     {
-        Debug.Log("RemoveCurrentInteractive");
         OnUnequip.Invoke();
         ActiveHand.FlushInteractable();
         ActiveHand = null;

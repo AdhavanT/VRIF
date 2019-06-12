@@ -34,25 +34,31 @@ public class SnapArea : MonoBehaviour
         #region Setting OnSnapped Callbacks
         OnSnapped += SetIsSetTrue;
         OnSnapped += DisableSnap;
-        OnSnapped += Host.CheckCompletion;
+        if(Host != null)
+        {
+            OnSnapped += Host.CheckCompletion;
+        }
         #endregion
     }
     private void OnDisable()
     {
         #region Removing OnSnapped Callbacks
-        OnSnapped -= Host.CheckCompletion;
+        if(Host != null)
+        {
+            OnSnapped -= Host.CheckCompletion;
+        }
         OnSnapped -= SetIsSetTrue;
         #endregion
     }
     #endregion
 
-    #region triggering OnAttachEvent
-    public void TriggerOnAttachEvent()
+    #region triggering OnSnappedEvent
+    public void TriggerOnSnappedEvent()
     {
-        StartCoroutine("CorTriggerOnAttachEvent");
+        StartCoroutine("CorTriggerOnSnappedEvent");
     }
 
-    IEnumerator CorTriggerOnAttachEvent()
+    IEnumerator CorTriggerOnSnappedEvent()
     {
         OnSnapped.Invoke();
         yield return null;

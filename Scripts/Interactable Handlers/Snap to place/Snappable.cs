@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Valve.VR;
 
-[RequireComponent(typeof(Grabbable), typeof(FixedJoint))]
+[RequireComponent(typeof(Grabbable))]
 public class Snappable : MonoBehaviour
 {
     private Interactable interactable;
@@ -25,11 +25,11 @@ public class Snappable : MonoBehaviour
     {
         TargetSnapArea = targetSnapArea;
         ReadyToAttach = true;
-        interactable.OnUnequip += EnableOnAttach;
-        interactable.OnUnequip += targetSnapArea.TriggerOnAttachEvent;
+        interactable.OnUnequip += PerformOnAttach;
+        interactable.OnUnequip += targetSnapArea.TriggerOnSnappedEvent;
     }
 
-    private void EnableOnAttach()
+    private void PerformOnAttach()
     {
         isAttached = true;
         QuickAttach();
@@ -38,17 +38,21 @@ public class Snappable : MonoBehaviour
     public void InitiateUnReadyToAttach()
     {
         isAttached = false;
-        interactable.OnUnequip -= EnableOnAttach;
+        interactable.OnUnequip -= TargetSnapArea.TriggerOnSnappedEvent;
+        interactable.OnUnequip -= PerformOnAttach;
         ReadyToAttach = false;
         TargetSnapArea = null;
     }
 
     public void QuickAttach()
     {
-        Debug.Log("quick attach is called");
         transform.position = TargetSnapArea.transform.position;
         transform.rotation = TargetSnapArea.transform.rotation;
-        Joint joint = GetComponent<Joint>();
+        Joint joint;
+        if ((joint = gameObject.GetComponent<FixedJoint>()) == null)
+        {
+            joint = gameObject.AddComponent(typeof(FixedJoint)) as FixedJoint;
+        }
         joint.connectedBody = TargetSnapArea.Host.GetComponent<Rigidbody>();
     }
 }

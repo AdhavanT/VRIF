@@ -23,7 +23,6 @@ public class SnapHost : MonoBehaviour
 
     public void CheckCompletion()
     {
-        Debug.Log("Checked for completion");
         Completed = true;
         foreach(SnapArea snapArea in SnapAreas)
         {
