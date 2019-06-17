@@ -1,18 +1,17 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
-using System;
 
 [RequireComponent(typeof(MeshCollider), typeof(MeshRenderer))]
 public class SnapArea : MonoBehaviour
 {
     public SnapHost Host;
     public delegate void SnapAreaEvent();
-    public SnapAreaEvent OnSnapped, OnPermanentSnap;
+    public SnapAreaEvent OnSnapped, OnUnSnapped, OnPermanentSnap;
     public bool IsSnapped;
     public bool PermanentSnap;
-    
+    public bool SetInvisibleOnStart = true;
+
     private MeshCollider meshCollider;
     private MeshRenderer meshRenderer;
 
@@ -34,38 +33,62 @@ public class SnapArea : MonoBehaviour
         #region Setting Events Callbacks
         AddOnSnappedCallbacks();
         AddOnPermanentSnapCallbacks();
+        if(SetInvisibleOnStart)
+        {
+            meshRenderer.enabled = false;
+        }
         #endregion
     }
 
-        #region Setting/Removing the Event's Callbacks
-        private void AddOnPermanentSnapCallbacks()
-        {
-            OnSnapped += SetIsSetTrue;
-            if (Host != null)
-            {
-                OnSnapped += Host.CheckCompletion;
-            }
-        }
 
-        private void AddOnSnappedCallbacks()
-        {
-            OnSnapped += SetIsSetTrue;
-            OnSnapped += DisableSnap;
-            if (Host != null)
-            {
-                OnSnapped += Host.CheckCompletion;
-            }
-        }
+    #region Setting/Removing the Event's Callbacks
 
-        private void RemoveAllCallbacks(ref SnapAreaEvent EmptysnapAreaEvent)
+    private void AddOnUnSnappedCallbacks()
+    {
+        if(Host != null)
         {
-            EmptysnapAreaEvent = null;
+            OnUnSnapped += Host.CheckCompletion;
         }
-        #endregion
+        OnUnSnapped += EnableSnap;
+        OnUnSnapped += RemoveAllUnSnappedCallbacks;
+    }
+
+    public void RemoveAllUnSnappedCallbacks()
+    {
+        RemoveAllCallbacks(ref OnUnSnapped);
+    }
+
+    private void AddOnPermanentSnapCallbacks()
+    {
+        IsSnapped = true;
+
+        OnPermanentSnap += DisableSnap;
+        if (Host != null)
+        {
+            OnPermanentSnap += Host.CheckCompletion;
+        }
+    }
+
+    private void AddOnSnappedCallbacks()
+    {
+        IsSnapped = true;
+        OnSnapped += AddOnUnSnappedCallbacks;
+        OnSnapped += DisableSnap;
+        if (Host != null)
+        {
+            OnSnapped += Host.CheckCompletion;
+        }
+    }
+
+    private void RemoveAllCallbacks(ref SnapAreaEvent EmptysnapAreaEvent)
+    {
+        EmptysnapAreaEvent = null;
+    }
+    #endregion
 
     private void DestroySnap()
     {
-        
+
     }
 
     private void OnDisable()
@@ -77,33 +100,52 @@ public class SnapArea : MonoBehaviour
     }
     #endregion
 
-    #region triggering OnSnappedEvent or the OnSnappedPermanentEvent
-    public void TriggerOnSnappedEvent()
-    {
-        StartCoroutine("CorTriggerOnSnappedEvent");
-    }
+    #region triggering Events
+        #region Trigger OnSnappedEvent
+        public void TriggerOnSnappedEvent()
+        {
+            StartCoroutine("CorTriggerOnSnappedEvent");
+        }
 
-    IEnumerator CorTriggerOnSnappedEvent()
-    {
-        if(PermanentSnap)
+        IEnumerator CorTriggerOnSnappedEvent()
         {
-            OnPermanentSnap.Invoke();
-            RemoveAllCallbacks(ref OnSnapped);
-            RemoveAllCallbacks(ref OnPermanentSnap);
+            if (PermanentSnap)
+            {
+                OnPermanentSnap.Invoke();
+                RemoveAllCallbacks(ref OnSnapped);
+                RemoveAllCallbacks(ref OnPermanentSnap);
+            }
+            else
+            {
+                OnSnapped.Invoke();
+            }
+            yield return null;
         }
-        else
+        #endregion
+
+        #region Trigger OnUnsnappedEvent
+        public void TriggerOnUnsnappedEvent()
         {
-            OnSnapped.Invoke();
+            StartCoroutine("CorTriggerOnUnsnappedEvent");
         }
-        yield return null;
-    }
+
+        IEnumerator CorTriggerOnUnsnappedEvent()
+        {
+            if (PermanentSnap)
+            {
+                Debug.Log("Trying to Unsnap from a permanent snap!");
+            }
+            else
+            {
+                OnUnSnapped.Invoke();
+            }
+            yield return null;
+        }
+        #endregion
     #endregion
 
     #region OnSnappedEvent Callback methods
-    public void SetIsSetTrue()
-    {
-        IsSnapped = true;
-    }
+
     #endregion
 
     #region Enabling and disabling SnapArea
@@ -123,8 +165,8 @@ public class SnapArea : MonoBehaviour
     #region Detecting entered snappables and handling them
     private void OnTriggerEnter(Collider other)
     {
-        EnteredSnappable = other.GetComponent<Snappable>(); 
-        if(EnteredSnappable == null)
+        EnteredSnappable = other.GetComponent<Snappable>();
+        if (EnteredSnappable == null)
         {
             return;
         }
@@ -132,7 +174,9 @@ public class SnapArea : MonoBehaviour
         {
             EnteredSnappableList.Add(EnteredSnappable);
             EnteredSnappable.InitiateReadyToAttach(this);
-
+            //temp sol
+            meshRenderer.enabled = true;
+            //
             return;
         }
     }
@@ -140,14 +184,17 @@ public class SnapArea : MonoBehaviour
     private void OnTriggerExit(Collider other)
     {
         EnteredSnappable = other.GetComponent<Snappable>();
-        if(EnteredSnappable == null)
+        if (EnteredSnappable == null)
         {
             return;
         }
-        if(EnteredSnappableList.Contains(EnteredSnappable))
+        if (EnteredSnappableList.Contains(EnteredSnappable))
         {
             EnteredSnappableList.Remove(EnteredSnappable);
             EnteredSnappable.InitiateUnReadyToAttach();
+            //temp sol
+            meshRenderer.enabled = false;
+            //
         }
         EnteredSnappable = null;
     }

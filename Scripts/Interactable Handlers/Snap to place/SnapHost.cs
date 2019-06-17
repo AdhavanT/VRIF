@@ -20,7 +20,6 @@ public class SnapHost : MonoBehaviour
         //}
     }
 
-
     public void CheckCompletion()
     {
         Completed = true;

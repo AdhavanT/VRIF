@@ -14,13 +14,14 @@ public class Interactable : MonoBehaviour
     public bool isActive;
     //The Events triggered by every interaction script
     public delegate void InteractableEvent();
-    public InteractableEvent OnStartInteraction;
     /// <summary>
     /// The OnUnequip delegate should be used for adding methods that are meant to 'detach' the interactable. 
     /// OnEndInteractions should be used to call OnUnequip as this will completely remove the interactable from interaction.
     /// </summary>
-    public InteractableEvent OnUnequip;
+    public Action OnUnequip;
+    public Action OnEquip;
     public InteractableEvent OnEndInteraction;
+    public InteractableEvent OnStartInteraction;
     public InteractableEvent ActionsToPerform;
 
 
@@ -34,6 +35,7 @@ public class Interactable : MonoBehaviour
     {
         ActiveHand.m_CurrentInteractable = this;
         isActive = true;
+        OnEquip.Invoke();
     }
 
     public void RemoveCurrentInteractive()

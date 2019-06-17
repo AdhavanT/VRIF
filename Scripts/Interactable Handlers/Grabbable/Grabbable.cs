@@ -13,8 +13,6 @@ using Valve.VR;
 public class Grabbable : MonoBehaviour
 {
     private Interactable interactable;
-    public UnityEvent OnPickUp;
-    public UnityEvent OnRelease;
     public bool isGrabbable = true;
     public bool enableToggleGrab = false;
     private bool isGrabbed = false;
@@ -28,7 +26,7 @@ public class Grabbable : MonoBehaviour
     {
         if(gameObject.GetComponent<Joint>() != null)
         {
-            Debug.Log("This component has a Fixed joint and wont be properly grabbable");
+            Debug.Log("This component has a Fixed joint and probably won't be grabbable");
         }
         if(OnGrabGrip == null)
         {
@@ -40,7 +38,7 @@ public class Grabbable : MonoBehaviour
 
     private void OnEnable()
     {
-        OnPickUp.AddListener(Pickup);
+        interactable.OnEquip += Pickup;
         interactable.ActionsToPerform += PerformUpdateAction;
     }
 
@@ -51,6 +49,11 @@ public class Grabbable : MonoBehaviour
 
     public void PerformUpdateAction()
     {
+        if (!isGrabbable)
+        {
+            return;
+        }
+
         if (enableToggleGrab == false)
         {
             if (isGrabbed)
@@ -72,7 +75,7 @@ public class Grabbable : MonoBehaviour
                 }
                 else
                 {
-                    OnPickUp.Invoke();
+                    interactable.SetCurrentInteractive();
                 }
 
             }
@@ -97,7 +100,7 @@ public class Grabbable : MonoBehaviour
                 {
                     if(OnGrabGrip.GetState(interactable.ActiveHand.m_Pose.inputSource) == true)
                     {
-                        OnPickUp.Invoke();
+                        interactable.SetCurrentInteractive();
                     }
                     else
                     {
@@ -115,18 +118,19 @@ public class Grabbable : MonoBehaviour
         rb.angularVelocity = interactable.ActiveHand.m_Pose.GetAngularVelocity();
         interactable.ActiveHand.m_joint.connectedBody = null;
         interactable.OnUnequip -= Drop;
+        interactable.OnEquip += Pickup;
         isGrabbed = false;
     }
 
     private void Pickup()
     {
-        interactable.OnStartInteraction.Invoke();
         isGrabbed = true;
         if(SnapPosToHand)
         {
             transform.position = interactable.ActiveHand.transform.position;
         }
         interactable.ActiveHand.m_joint.connectedBody = rb;
+        interactable.OnEquip -= Pickup;
         interactable.OnUnequip += Drop;
     }
 }
