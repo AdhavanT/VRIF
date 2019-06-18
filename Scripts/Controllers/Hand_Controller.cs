@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
 using UnityEngine.UI;
+using UnityEngine.Events;
 
 public class Hand_Controller : MonoBehaviour
 {
@@ -13,9 +14,10 @@ public class Hand_Controller : MonoBehaviour
     public SteamVR_Behaviour_Pose m_Pose = null;
     [HideInInspector]
     public FixedJoint m_joint = null;
-
+    public bool IsHoldingInteractable = false;
     private bool LookForNearestInteractable = false;
     private bool CoroutineisActive = false;
+    public UnityEvent UpdatedCurrentInteractable;
     [SerializeField]
     private Interactable m_NearestInteractable = null;
     public Interactable m_CurrentInteractable = null;
@@ -134,8 +136,17 @@ public class Hand_Controller : MonoBehaviour
 
     public void FlushInteractable()
     {
+        IsHoldingInteractable = false;
         m_CurrentInteractable = null;
         UpdateNearestInteractable(GetNearestInteractable());
+        UpdatedCurrentInteractable.Invoke();
+    }
+
+    public void SetCurrentInteractable(Interactable interactable)
+    {
+        IsHoldingInteractable = true;
+        m_CurrentInteractable = interactable;
+        UpdatedCurrentInteractable.Invoke();
     }
 
     public void UpdateNearestInteractable(Interactable interactable)

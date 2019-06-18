@@ -33,7 +33,7 @@ public class Interactable : MonoBehaviour
 
     public void SetCurrentInteractive()
     {
-        ActiveHand.m_CurrentInteractable = this;
+        ActiveHand.SetCurrentInteractable(this);
         isActive = true;
         OnEquip.Invoke();
     }
