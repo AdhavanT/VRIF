@@ -12,8 +12,10 @@ public class Teleport : MonoBehaviour
     public GameObject CameraRig;
     public bool HandAvailable = true;
     public bool CanTeleport = false;
+    public bool IsTeleporting = false;
     public float MaxDistance = 10f;
     public GameObject Pointer;
+    public float FadeDuration = 0.2f;
     public Vector3 offset = Vector3.zero;
     public SteamVR_Action_Boolean TeleportAction;
 
@@ -41,14 +43,28 @@ public class Teleport : MonoBehaviour
         }
         if (TeleportAction.GetStateDown(hand_Controller.m_Pose.inputSource))
         {
-            Teleport();
+            TeleportToPoint();
         }
 
     }
 
-    private void Teleport()
+    private void TeleportToPoint()
     {
-        
+        IsTeleporting = true;
+        Transform RigTransform = SteamVR_Render.Top().origin;
+        Vector3 HeadPos = SteamVR_Render.Top().head.position;
+        Vector3 TranslateVector = Pointer.transform.position - HeadPos;
+        StartCoroutine(MoveRig(RigTransform, TranslateVector));
+    }
+
+    public IEnumerator MoveRig(Transform CameraRig, Vector3 Translate)
+    {
+        SteamVR_Fade.Start(Color.black, FadeDuration, true);
+        yield return new WaitForSeconds(FadeDuration);
+        CameraRig.position += Translate;
+        SteamVR_Fade.Start(Color.clear, FadeDuration, true);
+        IsTeleporting = false;
+        yield return null;
     }
 
     private bool UpdatePointer()
