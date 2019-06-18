@@ -11,7 +11,7 @@ public class Interactable : MonoBehaviour
     public Hand_Controller ActiveHand = null;
     [HideInInspector]
     public Hand_Controller m_SecondaryHand = null;
-    public bool isActive;
+    public bool isActive = false;
     //The Events triggered by every interaction script
     public delegate void InteractableEvent();
     /// <summary>
