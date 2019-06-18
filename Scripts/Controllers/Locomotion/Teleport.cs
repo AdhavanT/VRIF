@@ -15,7 +15,6 @@ public class Teleport : MonoBehaviour
     public bool CanTeleport = false;
     public bool IsTeleporting = false;
     public float MaxDistance = 10f;
-    public GameObject Pointer;
     public float FadeDuration = 0.2f;
     public Vector3 offset = Vector3.zero;
     public SteamVR_Action_Boolean TeleportAction;
@@ -104,7 +103,6 @@ public class Teleport : MonoBehaviour
                 return;
             }
         }
-        
     }
 
     private void TeleportToPoint()
@@ -128,7 +126,6 @@ public class Teleport : MonoBehaviour
 
     private void UpdatePointer()
     {
-        //Debug.Log("Update pointer executed");
         Ray ray = new Ray(CurrentHand.transform.position + offset, transform.forward);
         RaycastHit hit;
         if(Physics.Raycast(ray, out hit, MaxDistance))
@@ -136,19 +133,19 @@ public class Teleport : MonoBehaviour
             Debug.Log(hit.collider.gameObject.layer);
             if(TeleportableLayers == (TeleportableLayers | (1 << hit.collider.gameObject.layer)))
             {
-                Pointer.SetActive(true);
-                Pointer.transform.position = hit.point;
+                GetComponent<MeshRenderer>().enabled = true;
+                transform.position = hit.point;
                 CanTeleport = true;
             }
             else
             {
-                Pointer.SetActive(false);
+                GetComponent<MeshRenderer>().enabled = false;
                 CanTeleport = false;
             }
         }
         else
         {
-            Pointer.SetActive(false);
+            GetComponent<MeshRenderer>().enabled = false;
             CanTeleport = false;
         }
     }
