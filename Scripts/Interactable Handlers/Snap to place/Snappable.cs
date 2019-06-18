@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using Valve.VR;
 /// <summary>
 /// TODO: This script is very mess and needs to be cleaned up.
- ///      1.Segment all OnUnequip/OnEquip callbacks into seperate actions and re-organize all code to methods for:
+///      1.Segment all OnUnequip/OnEquip callbacks into seperate actions and re-organize all code to methods for:
 ///            OnEnteringSnapArea, OnLeavingSnapArea
 ///            On Attaching when OnUnequip is called.
 ///            if SnapArea if permanent or non-permanent, call respective methods for acting on detachment 
@@ -19,15 +17,73 @@ public class Snappable : MonoBehaviour
 
     [Tooltip("This string is used to filter out snapping with SnapAreas with a different 'Lock' string")]
     public string Key;
+    public UnityEvent OnSnap; 
+    public bool HighlightOnPickup;
+    public SnapArea[] SceneSnapAreas;
+    public List<SnapArea> MatchedSnapAreas;
     private bool isAttached = false;
     private SnapArea TargetSnapArea;
     private Action ReadyToAttachAction;
+    private Action EnableSnapAreas;
+    private Action DisableSnapAreas;
     public bool ReadyToAttach = false;
     private Joint joint;
 
     private void Awake()
     {
         interactable = GetComponent<Interactable>();
+    }
+    private void OnEnable()
+    {
+        if(HighlightOnPickup)
+        {
+            SceneSnapAreas = FindObjectsOfType<SnapArea>();
+            for(int i = 0; i < SceneSnapAreas.Length; i++)
+            {
+                if(SceneSnapAreas[i].Locks.Contains(Key))
+                {
+                    MatchedSnapAreas.Add(SceneSnapAreas[i]);
+                    EnableSnapAreas += SceneSnapAreas[i].EnableSnap;
+                    DisableSnapAreas += SceneSnapAreas[i].DisableSnap;
+                }
+            }
+            GetComponent<Grabbable>().OnPickup.AddListener(EnableSnapAreas.Invoke);
+            GetComponent<Grabbable>().OnDrop.AddListener(DisableSnapAreas.Invoke);
+            OnSnap.AddListener(UpdateHighLightOnPickupListeners);
+            //EnableSnapAreas += RemoveEnableSnapAreasAction;
+            //DisableSnapAreas += RemoveDisableSnapAreasAction;
+            //interactable.OnEquip += EnableSnapAreas;
+        }
+    }
+
+    //private void RemoveEnableSnapAreasAction()
+    //{
+    //    interactable.OnEquip -= EnableSnapAreas;
+    //    interactable.OnUnequip += DisableSnapAreas;
+    //}
+
+    //private void RemoveDisableSnapAreasAction()
+    //{
+    //    interactable.OnUnequip -= DisableSnapAreas;
+    //    interactable.OnEquip += EnableSnapAreas;
+    //}
+
+    public void UpdateHighLightOnPickupListeners()
+    {
+        EnableSnapAreas -= TargetSnapArea.EnableSnap;
+        DisableSnapAreas -= TargetSnapArea.DisableSnap;
+    }
+
+    public void ForceInvokeSnap()
+    {
+        if(interactable.isActive)
+        {
+            interactable.RemoveCurrentInteractive();
+        }
+        else
+        {
+            interactable.OnUnequip();
+        }
     }
 
     public void InitiateReadyToAttach(SnapArea targetSnapArea)
@@ -37,6 +93,10 @@ public class Snappable : MonoBehaviour
         interactable.OnUnequip += PerformToAttach;
         interactable.OnUnequip += SetJoint;
         interactable.OnUnequip += targetSnapArea.TriggerOnSnappedEvent;
+        //if(AttachOnEnter)
+        //{
+        //    interactable.RemoveCurrentInteractive();
+        //}
     }
 
     /// <summary>
@@ -67,26 +127,24 @@ public class Snappable : MonoBehaviour
     {
         isAttached = true;
         QuickAttach();
-        if(TargetSnapArea.PermanentSnap == false)
+        OnSnap.Invoke();
+        if (TargetSnapArea.PermanentSnap == false)
         {
             //this makes sure that InitiateReadyToDetach always occurs first
             Action temp = interactable.OnEquip;
             interactable.OnEquip = null;
             interactable.OnEquip += InitiateReadyToDetach;
             interactable.OnEquip += temp;
-
-            interactable.OnUnequip -= TargetSnapArea.TriggerOnSnappedEvent;
-            interactable.OnUnequip -= SetJoint;
-            interactable.OnUnequip -= PerformToAttach;
         }
         else
         {
             interactable.OnEquip -= InitiateReadyToDetach;
             //quick fix for when when the permanemt snap toggle is changed during runtime
-            interactable.OnUnequip -= TargetSnapArea.TriggerOnSnappedEvent;
-            interactable.OnUnequip -= SetJoint;
-            interactable.OnUnequip -= PerformToAttach;
         }
+        interactable.OnUnequip -= TargetSnapArea.TriggerOnSnappedEvent;
+        interactable.OnUnequip -= SetJoint;
+        interactable.OnUnequip -= PerformToAttach;
+        
     }
 
     /// <summary>

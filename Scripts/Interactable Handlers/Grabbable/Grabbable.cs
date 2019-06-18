@@ -14,11 +14,14 @@ public class Grabbable : MonoBehaviour
 {
     private Interactable interactable;
     public bool isGrabbable = true;
+    public UnityEvent OnPickup;
+    public UnityEvent OnDrop;
     public bool enableToggleGrab = false;
-    private bool isGrabbed = false;
+    public bool isGrabbed = false;
     private Rigidbody rb;
     [Tooltip("This sets whether to snap the object direcly to hands pos or directly link it")]
     public bool SnapPosToHand = false;
+    public Vector3 offset = Vector3.zero;
    
     public SteamVR_Action_Boolean OnGrabGrip;
 
@@ -117,6 +120,7 @@ public class Grabbable : MonoBehaviour
         rb.velocity = interactable.ActiveHand.m_Pose.GetVelocity();
         rb.angularVelocity = interactable.ActiveHand.m_Pose.GetAngularVelocity();
         interactable.ActiveHand.m_joint.connectedBody = null;
+        OnDrop.Invoke();
         interactable.OnUnequip -= Drop;
         interactable.OnEquip += Pickup;
         isGrabbed = false;
@@ -127,9 +131,10 @@ public class Grabbable : MonoBehaviour
         isGrabbed = true;
         if(SnapPosToHand)
         {
-            transform.position = interactable.ActiveHand.transform.position;
+            transform.position = offset + interactable.ActiveHand.transform.position;
         }
         interactable.ActiveHand.m_joint.connectedBody = rb;
+        OnPickup.Invoke();
         interactable.OnEquip -= Pickup;
         interactable.OnUnequip += Drop;
     }

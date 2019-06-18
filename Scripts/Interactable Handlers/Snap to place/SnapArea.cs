@@ -11,7 +11,7 @@ public class SnapArea : MonoBehaviour
     public bool IsSnapped;
     public bool PermanentSnap;
     public bool SetInvisibleOnStart = true;
-
+    public bool AttachOnEnter = false;
     private MeshCollider meshCollider;
     private MeshRenderer meshRenderer;
 
@@ -19,9 +19,11 @@ public class SnapArea : MonoBehaviour
     public List<Snappable> EnteredSnappableList;
     [Tooltip("Snappables will only snap in this SnapArea if it's key value is also in Locks")]
     public List<string> Locks;
+    private bool AttachedOnEnter = false;
 
     void Awake()
     {
+        IsSnapped = false;
         Host = GetComponentInParent<SnapHost>();
         meshCollider = GetComponent<MeshCollider>();
         meshRenderer = GetComponent<MeshRenderer>();
@@ -60,8 +62,6 @@ public class SnapArea : MonoBehaviour
 
     private void AddOnPermanentSnapCallbacks()
     {
-        IsSnapped = true;
-
         OnPermanentSnap += DisableSnap;
         if (Host != null)
         {
@@ -71,7 +71,6 @@ public class SnapArea : MonoBehaviour
 
     private void AddOnSnappedCallbacks()
     {
-        IsSnapped = true;
         OnSnapped += AddOnUnSnappedCallbacks;
         OnSnapped += DisableSnap;
         if (Host != null)
@@ -86,11 +85,6 @@ public class SnapArea : MonoBehaviour
     }
     #endregion
 
-    private void DestroySnap()
-    {
-
-    }
-
     private void OnDisable()
     {
         #region Removing Callbacks
@@ -104,6 +98,7 @@ public class SnapArea : MonoBehaviour
         #region Trigger OnSnappedEvent
         public void TriggerOnSnappedEvent()
         {
+        IsSnapped = true;
             StartCoroutine("CorTriggerOnSnappedEvent");
         }
 
@@ -151,14 +146,33 @@ public class SnapArea : MonoBehaviour
     #region Enabling and disabling SnapArea
     public void EnableSnap()
     {
+        if(PermanentSnap && IsSnapped)
+        {
+            DisableSnap();
+            return;
+        }
         meshRenderer.enabled = true;
         meshCollider.enabled = true;
+    }
+
+    public void EnableSnapRenderer()
+    {   
+        if(PermanentSnap == true && IsSnapped == true)
+        {
+            return;
+        }
+        meshRenderer.enabled = true;
     }
 
     public void DisableSnap()
     {
         meshRenderer.enabled = false;
         meshCollider.enabled = false;
+    }
+
+    public void DisableSnapRenderer()
+    {
+        meshRenderer.enabled = false;
     }
     #endregion
 
@@ -177,6 +191,15 @@ public class SnapArea : MonoBehaviour
             //temp sol
             meshRenderer.enabled = true;
             //
+            if(AttachOnEnter)
+            {
+                if (!PermanentSnap)
+                {
+                    AttachedOnEnter = true;
+                    AttachOnEnter = false;
+                }
+                EnteredSnappable.ForceInvokeSnap();
+            }
             return;
         }
     }
@@ -193,8 +216,16 @@ public class SnapArea : MonoBehaviour
             EnteredSnappableList.Remove(EnteredSnappable);
             EnteredSnappable.InitiateUnReadyToAttach();
             //temp sol
-            meshRenderer.enabled = false;
+            if(EnteredSnappable.HighlightOnPickup == false)
+            {
+                meshRenderer.enabled = false;
+            }
             //
+        }
+        if(AttachedOnEnter)
+        {
+            AttachedOnEnter = false;
+            AttachOnEnter = true;
         }
         EnteredSnappable = null;
     }
