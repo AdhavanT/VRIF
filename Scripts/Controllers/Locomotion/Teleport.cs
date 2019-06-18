@@ -8,7 +8,8 @@ public class Teleport : MonoBehaviour
 {
     [SerializeField]
     LayerMask TeleportableLayers = 1 << 8;
-    Hand_Controller hand_Controller;
+    public Hand_Controller Right_Hand, Left_Hand;
+    private Hand_Controller CurrentHand;
     public GameObject CameraRig;
     public bool HandAvailable = true;
     public bool CanTeleport = false;
@@ -18,34 +19,92 @@ public class Teleport : MonoBehaviour
     public float FadeDuration = 0.2f;
     public Vector3 offset = Vector3.zero;
     public SteamVR_Action_Boolean TeleportAction;
+    public SteamVR_Action_Boolean SwapHandAction;
 
     private void Awake()
     {
-        hand_Controller = GetComponent<Hand_Controller>();
-        hand_Controller.UpdatedCurrentInteractable.AddListener(UpdateHandAvailable);
+        if(TeleportAction == null)
+        {
+            TeleportAction = SteamVR_Actions.default_Teleport;
+        }
+        CurrentHand = Left_Hand == null ? Right_Hand : Left_Hand;
+        CurrentHand = Right_Hand == null ? Left_Hand : Right_Hand;
+        Left_Hand.UpdatedCurrentInteractable.AddListener(UpdateHandAvailable);
+        Right_Hand.UpdatedCurrentInteractable.AddListener(UpdateHandAvailable);
     }
 
     private void UpdateHandAvailable()
     {
-        HandAvailable = hand_Controller.IsHoldingInteractable;
+        if(Left_Hand == null || Right_Hand == null)
+        {
+            return;
+        }
+        if(CurrentHand.IsHoldingInteractable)
+        {
+            SwapCurrentHand();
+        }
+    }
+
+    private void SwapCurrentHand()
+    {
+        if(CurrentHand == Right_Hand)
+        {
+            CurrentHand = Left_Hand;
+            return;
+        }
+        else if(CurrentHand == Left_Hand)
+        {
+            CurrentHand = Right_Hand;
+            return;
+        }
+        else
+        {
+            return;
+        }
     }
 
     void Update()
     {
-        if (HandAvailable)
+        if (!HandAvailable)
         {
             return;
         }
+        CheckforSwap();
         UpdatePointer();
         if(!CanTeleport)
         {
             return;
         }
-        if (TeleportAction.GetStateDown(hand_Controller.m_Pose.inputSource))
+        if (TeleportAction.GetStateDown(CurrentHand.m_Pose.inputSource))
         {
             TeleportToPoint();
         }
 
+    }
+
+    private void CheckforSwap()
+    {
+        if(Left_Hand == null || Right_Hand == null)
+        {
+            return;
+        }
+        if(CurrentHand == Right_Hand)
+        {
+            if(SwapHandAction.GetStateDown(Left_Hand.m_Pose.inputSource))
+            {
+                SwapCurrentHand();
+                return;
+            }
+        }
+        if(CurrentHand == Left_Hand)
+        {
+            if(SwapHandAction.GetStateDown(Right_Hand.m_Pose.inputSource))
+            {
+                SwapCurrentHand();
+                return;
+            }
+        }
+        
     }
 
     private void TeleportToPoint()
@@ -53,7 +112,7 @@ public class Teleport : MonoBehaviour
         IsTeleporting = true;
         Transform RigTransform = SteamVR_Render.Top().origin;
         Vector3 HeadPos = SteamVR_Render.Top().head.position;
-        Vector3 TranslateVector = Pointer.transform.position - HeadPos;
+        Vector3 TranslateVector = transform.position - HeadPos;
         StartCoroutine(MoveRig(RigTransform, TranslateVector));
     }
 
@@ -67,31 +126,30 @@ public class Teleport : MonoBehaviour
         yield return null;
     }
 
-    private bool UpdatePointer()
+    private void UpdatePointer()
     {
-        Ray ray = new Ray(transform.position + offset, transform.forward);
+        //Debug.Log("Update pointer executed");
+        Ray ray = new Ray(CurrentHand.transform.position + offset, transform.forward);
         RaycastHit hit;
         if(Physics.Raycast(ray, out hit, MaxDistance))
         {
+            Debug.Log(hit.collider.gameObject.layer);
             if(TeleportableLayers == (TeleportableLayers | (1 << hit.collider.gameObject.layer)))
             {
                 Pointer.SetActive(true);
                 Pointer.transform.position = hit.point;
                 CanTeleport = true;
-                return true;
             }
             else
             {
                 Pointer.SetActive(false);
                 CanTeleport = false;
-                return false;
             }
         }
         else
         {
             Pointer.SetActive(false);
             CanTeleport = false;
-            return false;
         }
     }
 }
