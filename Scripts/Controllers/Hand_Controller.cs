@@ -8,8 +8,6 @@ using UnityEngine.Events;
 
 public class Hand_Controller : MonoBehaviour
 {
-    public SteamVR_Action_Boolean m_TeleportAction;
-
     [HideInInspector]
     public SteamVR_Behaviour_Pose m_Pose = null;
     [HideInInspector]
