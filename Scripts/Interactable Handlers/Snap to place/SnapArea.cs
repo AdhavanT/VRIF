@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(MeshCollider), typeof(MeshRenderer))]
 public class SnapArea : MonoBehaviour
@@ -14,7 +15,7 @@ public class SnapArea : MonoBehaviour
     public bool AttachOnEnter = false;
     private MeshCollider meshCollider;
     private MeshRenderer meshRenderer;
-
+    public UnityEvent OnSnap; 
     public Snappable EnteredSnappable;
     public List<Snappable> EnteredSnappableList;
     [Tooltip("Snappables will only snap in this SnapArea if it's key value is also in Locks")]
@@ -113,7 +114,9 @@ public class SnapArea : MonoBehaviour
             else
             {
                 OnSnapped.Invoke();
+                
             }
+            OnSnap.Invoke();
             yield return null;
         }
         #endregion
