@@ -103,7 +103,6 @@ public class Hand_Controller : MonoBehaviour
             UpdateNearestInteractable(GetNearestInteractable());
             yield return new WaitForEndOfFrame();
         }
-        Debug.Log("stopped looking for nearest interactable");
         CoroutineisActive = false;
         yield return null;
     }
